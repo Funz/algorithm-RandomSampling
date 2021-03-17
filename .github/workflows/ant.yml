@@ -67,16 +67,16 @@ jobs:
         cd $WD
     - run: |
         ant clean dist
-        cd dist; zip -r ../algorithm-MyAlgorithm.zip *; cd ..
+        cd dist; zip -r ../algorithm-RandomSampling.zip *; cd ..
         ant install
-        zip -r FunzR-MyAlgorithm.zip FunzR-MyAlgorithm
+        zip -r FunzR-RandomSampling.zip FunzR-RandomSampling
     - uses: actions/upload-artifact@v2
       with:
         path: dist
     - uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: ./*-MyAlgorithm.zip
+        files: ./*-RandomSampling.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         

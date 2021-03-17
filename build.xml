@@ -1,6 +1,6 @@
-<project name="algorithm-MyAlgorithm" default="test" basedir=".">
+<project name="algorithm-RandomSampling" default="test" basedir=".">
 
-    <property name="algorithm.name" value="MyAlgorithm" />
+    <property name="algorithm.name" value="RandomSampling" />
     <property name="install.dir" value="${basedir}/FunzR-${algorithm.name}" />
 
     <property name="funz.release" value="v1.12" />
