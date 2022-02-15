@@ -1,49 +1,29 @@
-#help: Random sampling
+#help: Random uniform sampling
 #tags: uncertainties
-#options: sample_size='100'; seed='1'; model[x]='{"x":"Unif(0,1)"}'
-#require: jsonlite
+#options: sample_size='100'; seed='1'
 #input: x=list(min=0,max=1)
 #output: y=0.99
 
 #' constructor and initializer of R session
-RandomSampling <- function(opts) {
-  randomsampling = new.env()
+UniformSampling <- function(opts) {
+  uniformsampling = new.env()
 
-  randomsampling$sample_size <- as.integer(opts$sample_size)
-  randomsampling$seed <- as.integer(opts$seed)
-  if (is.list(opts[['model[x]']]))
-    randomsampling[['model[x]']] <- opts[['model[x]']]
-  else
-    randomsampling[['model[x]']] <- jsonlite::fromJSON(opts[['model[x]']])
+  uniformsampling$sample_size <- as.integer(opts$sample_size)
+  uniformsampling$seed <- as.integer(opts$seed)
 
-  return(randomsampling)
+  return(uniformsampling)
 }
 
 #' first design building. All variables are set in [min,max]
 #' @param input variables description (min/max, properties, ...)
 #' @param output values of interest description
 getInitialDesign <- function(algorithm,input,output) {
+  algorithm$input = input
   algorithm$output = output
-  algorithm$i = 0
   set.seed(algorithm$seed)
-  X = NULL
-  for (x in names(algorithm[['model[x]']])) {
-    mx = unlist(strsplit(algorithm[['model[x]']][[x]],"::")) # supports evd::GEV(...)
-    if (length(mx)>1) {
-      library(mx[1])
-      mx = mx[-1]
-    }
-    X = cbind(X,eval(parse(
-      text=paste0("r",
-                  gsub(       "(",
-                       paste0("(",algorithm$sample_size,","),
-                       tolower(mx), fixed=T
-                       )
-                  ))
-        ))
-  }
-  names(X) <- names(algorithm[['model[x]']])
-  return(X)
+  X = matrix(runif(algorithm$sample_size * length(input)),ncol=length(input))
+  names(X) <- names(input)
+  return(from01(X,algorithm$input))
 }
 
 #' iterated design building.
@@ -100,6 +80,24 @@ displayResultsTmp <- function(algorithm,X,Y) {
     return(html)
 }
 
+from01 = function(X, inp) {
+  nX = names(X)
+  for (i in 1:ncol(X)) {
+    namei = nX[i]
+    X[,i] = X[,i] * (inp[[ namei ]]$max-inp[[ namei ]]$min) + inp[[ namei ]]$min
+  }
+  return(X)
+}
+
+to01 = function(X, inp) {
+  nX = names(X)
+  for (i in 1:ncol(X)) {
+    namei = nX[i]
+    X[,i] = (X[,i] - inp[[ namei ]]$min) / (inp[[ namei ]]$max-inp[[ namei ]]$min)
+  }
+  return(X)
+}
+
 ##############################################################################################
 # @test
 # f <- function(X) matrix(apply(X,1,function (x) {
@@ -109,19 +107,19 @@ displayResultsTmp <- function(algorithm,X,Y) {
 # }),ncol=1)
 # # f1 = function(x) f(cbind(.5,x))
 # 
-# options = list(sample_size = 100, seed = 1, 'model[x]' = '{"x1":"Unif(-1,1)","x2":"Unif(1,2)"}')
-# gd = RandomSampling(options)
+# options = list(sample_size = 100, seed = 1)
+# a = UniformSampling(options)
 # 
-# X0 = getInitialDesign(gd, input=list(x1=list(min=0,max=1),x2=list(min=0,max=1)), "y")
+# X0 = getInitialDesign(a, input=list(x1=list(min=0,max=1),x2=list(min=0,max=1)), "y")
 # Y0 = f(X0)
-# # X0 = getInitialDesign(gd, input=list(x2=list(min=0,max=1)), NULL)
+# # X0 = getInitialDesign(a, input=list(x2=list(min=0,max=1)), NULL)
 # # Y0 = f1(X0)
 # Xi = X0
 # Yi = Y0
 # 
 # finished = FALSE
 # while (!finished) {
-#     Xj = getNextDesign(gd,Xi,Yi)
+#     Xj = getNextDesign(a,Xi,Yi)
 #     if (is.null(Xj) | length(Xj) == 0) {
 #         finished = TRUE
 #     } else {
@@ -131,4 +129,4 @@ displayResultsTmp <- function(algorithm,X,Y) {
 #     }
 # }
 # 
-# print(displayResults(gd,Xi,Yi))
+# print(displayResults(a,Xi,Yi))
